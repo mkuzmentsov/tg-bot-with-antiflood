@@ -1,7 +1,7 @@
 import time as tm
 
 spams = {}
-msgs = 4
+msgs = 10
 max = 5
 ban = 300
 

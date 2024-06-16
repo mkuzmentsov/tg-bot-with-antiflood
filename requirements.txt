@@ -1,1 +1,4 @@
 python-telegram-bot==21.0.1
+psycopg2==2.9.9
+sqlalchemy==2.0.29
+pyinstaller==6.8.0
