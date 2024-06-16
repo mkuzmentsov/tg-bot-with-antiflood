@@ -20,7 +20,7 @@ class BlacklistManager(object):
         with open(filename, "r") as f:
             return f.read()
 
-    def is_blacklisted(self, userid: str | int):
+    def is_blacklisted(self, userid):
         userid = str(userid)
         content = self._read_file_contents()
         ids_list = re.split("[\n,;]", content)
