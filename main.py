@@ -7,18 +7,17 @@ import re
 from typing import Optional, Tuple
 
 import telegram
-import time
 from datetime import timedelta
 
-from telegram import ForceReply, Update, InputMedia, InputMediaPhoto, Chat, ChatMember, ChatMemberUpdated
+from telegram import Update, Chat, ChatMember, ChatMemberUpdated
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, ChatMemberHandler, filters
 
 from anti_flood import is_flood
 from blacklist_manager import BlacklistManager
-
+from db.dao.DAO import DAO
+from db.dao.NoOpDao import NoOpDao
+from db.dao.AbstractDAO import AbstractDAO
 import db.connection_manager
-from db.DAO import get_user_by_id, insert_user, insert_message
-from db.connection_manager import init_sqlalchemy
 
 tg_bot_token = os.environ['TG_BOT_TOKEN']
 forward_group_id = int(os.environ['TG_FORWARD_GROUP_ID'])
@@ -35,6 +34,7 @@ logger = logging.getLogger(__name__)
 
 blacklist_manager = BlacklistManager()
 
+dao: AbstractDAO = DAO() if os.environ.get("DB_CONNECTION_STRING") else NoOpDao()
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # start_message_file = open(start_message_file_location, "r", encoding="utf8")
@@ -80,11 +80,11 @@ def _save_msg(update: Update, client_msg_text):
     else:
         pass
 
-    user = db.DAO.get_user_by_id(user_id)
+    user = dao.get_user_by_id(user_id)
     if not user:
-        db.DAO.insert_user(user_id, username, full_name)
+        dao.insert_user(user_id, username, full_name)
 
-    db.DAO.insert_message(user_id, update.message.date + timedelta(hours=3), text, binary_id)
+    dao.insert_message(user_id, update.message.date + timedelta(hours=3), text, binary_id)
 
 
 async def handle_msg_from_client(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -164,7 +164,6 @@ async def track_blocked(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
 def main() -> None:
     logger.info(f"forward_group_id='{forward_group_id}'")
-    init_sqlalchemy()
     # Create the Application and pass it your bot's token.
     application = Application.builder().token(tg_bot_token).build()
 
