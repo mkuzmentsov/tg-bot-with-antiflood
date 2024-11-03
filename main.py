@@ -14,6 +14,7 @@ from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandl
 
 from anti_flood import is_flood
 from blacklist_manager import BlacklistManager
+from user_db_manager import UserDBManager
 from db.dao.DAO import DAO
 from db.dao.NoOpDao import NoOpDao
 from db.dao.AbstractDAO import AbstractDAO
@@ -25,7 +26,7 @@ start_message = os.environ['START_MESSAGE']
 
 # Enable logging
 logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
+    format="%(asctime)s - %(name)s - %s(levelname)s - %(message)s", level=logging.INFO
 )
 # set higher logging level for httpx to avoid all GET and POST requests being logged
 logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -33,6 +34,7 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 blacklist_manager = BlacklistManager()
+userdb_manager = UserDBManager()
 
 dao: AbstractDAO = DAO() if os.environ.get("DB_CONNECTION_STRING") else NoOpDao()
 
@@ -102,7 +104,9 @@ async def handle_msg_from_client(update: Update, context: ContextTypes.DEFAULT_T
         client_msg_text = update.message.text or update.message.caption or ""
         client_msg_text = re.sub(r'(https?:\/\/)(\s)*(www\.)?(\s)*((\w|\s)+\.)*([\w\-\s]+\/)*([\w\-]+)((\?)?[\w\s]*=\s*[\w\%&]*)*', '!ССЫЛКА УДАЛЕНА!', client_msg_text, flags=re.MULTILINE)
 
-        msg = f"Новое сообщение от #id{user_id} (@{username}) ({full_name})\n{client_msg_text}"
+        other_info = userdb_manager.get_data(f"#id{user_id}")
+
+        msg = f"Новое сообщение от #id{user_id} (@{username}) ({full_name} {other_info})\n{client_msg_text}"
 
         await _send_msg(update, msg, forward_group_id)
         _save_msg(update, client_msg_text)
